@@ -4,7 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,15 +16,25 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
-@RequiredArgsConstructor // UserDetailsService 주입을 위해 추가
 public class JwtTokenProvider {
 
     private final UserDetailsService userDetailsService;
-    private final String secretString = "devnear-project-secret-key-for-jwt-token-issuance-2026";
-    private final SecretKey key = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
-    private final long validityInMilliseconds = 3600000; // 1시간
+    private final SecretKey key; // final 유지
+    private final long validityInMilliseconds; // final 유지
 
-    // 1. 토큰 생성 (기존 유지)
+    // 2. 생성자를 통해 설정값(@Value)과 의존성(UserDetailsService)을 한꺼번에 주입받
+    public JwtTokenProvider(
+            UserDetailsService userDetailsService,
+            @Value("${jwt.secret}") String secretString,
+            @Value("${jwt.expiration}") long validityInMilliseconds
+    ) {
+        this.userDetailsService = userDetailsService;
+        this.validityInMilliseconds = validityInMilliseconds;
+        // 주입받은 secretString으로 여기서 Key를 생성합니다.
+        this.key = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // 1. 토큰 생성 (기존 로직 유지, 필드값 사용)
     public String createToken(Long userId, String email, String role) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
@@ -40,28 +50,25 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // 2. 검문소에서 토큰이 유효한지 검사하는 기능
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                    .verifyWith(key) // 0.12.x 문법: verifyWith 사용
+                    .verifyWith(key)
                     .build()
                     .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            // 토큰이 위조되었거나, 만료되었거나, 잘못된 경우
             return false;
         }
     }
 
-    // 3. 토큰을 통해 유저 신원 정보를 가져와서 '인증 객체'를 만드는 기능
     public Authentication getAuthentication(String token) {
         String email = getEmail(token);
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
-    // 4. 토큰에서 유저의 이메일(Subject)을 추출하는 보조 메서드
     public String getEmail(String token) {
         return Jwts.parser()
                 .verifyWith(key)

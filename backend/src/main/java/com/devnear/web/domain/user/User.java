@@ -68,13 +68,11 @@ public class User extends BaseTimeEntity implements UserDetails { // 1. UserDeta
     // ================= [UserDetails 필수 구현 메서드] =================
 
     @Override
-    @Transient // JPA가 이 메서드를 컬럼으로 인식하지 않게 합니다.
+    @Transient
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // 마스터의 Role Enum을 시큐리티 권한으로 변환 (예: ROLE_USER 등)
-        // 만약 Role Enum에 ROLE_ 접두사가 없다면 여기서 붙여주는 것이 타당합니다.
-        return List.of(new SimpleGrantedAuthority(this.role.name()));
+        // "ROLE_" 접두사를 붙여서 반환해야 시큐리티의 hasRole()이 타당하게 작동합니다.
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
     }
-
     @Override
     public String getUsername() {
         return this.email; // 우리 기지의 ID는 이메일입니다.
