@@ -8,12 +8,19 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.Transient;
+
+import java.util.Collection;
+import java.util.List;
 
 @Entity
-@Table(name = "users") // 보통 user는 DB 예약어라 users로 씁니다.
+@Table(name = "users")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 규격을 맞추되, 함부로 빈 객체를 못 만들게 보호
-public class User extends BaseTimeEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class User extends BaseTimeEntity implements UserDetails { // 1. UserDetails 인터페이스 추가
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,7 +45,7 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
-    @Enumerated(EnumType.STRING) // 이걸 안 쓰면 DB에 숫자(0, 1)로 들어가서 나중에 피눈물 납니다. 꼭 STRING!
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
 
@@ -55,6 +62,48 @@ public class User extends BaseTimeEntity {
         this.phoneNumber = phoneNumber;
         this.profileImageUrl = profileImageUrl;
         this.role = role;
-        this.status = UserStatus.ACTIVE; // 가입 시 기본값은 '활동 중'
+        this.status = UserStatus.ACTIVE;
+    }
+
+    // ================= [UserDetails 필수 구현 메서드] =================
+
+    @Override
+    @Transient // JPA가 이 메서드를 컬럼으로 인식하지 않게 합니다.
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // 마스터의 Role Enum을 시큐리티 권한으로 변환 (예: ROLE_USER 등)
+        // 만약 Role Enum에 ROLE_ 접두사가 없다면 여기서 붙여주는 것이 타당합니다.
+        return List.of(new SimpleGrantedAuthority(this.role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; // 우리 기지의 ID는 이메일입니다.
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password; // 암호화된 비밀번호 필드와 연결
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; // 계정 만료 여부 (true: 만료 안 됨)
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        // 만약 나중에 status가 BANNED이면 false를 주게 고칠 수도 있습니다.
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true; // 비번 만료 여부
+    }
+
+    @Override
+    public boolean isEnabled() {
+        // 유저 상태가 ACTIVE일 때만 활성화 (타당한 정합성 체크)
+        return this.status == UserStatus.ACTIVE;
     }
 }
