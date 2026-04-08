@@ -2,6 +2,7 @@ package com.devnear.web.service.skill;
 
 import com.devnear.web.domain.skill.Skill;
 import com.devnear.web.domain.skill.SkillRepository;
+import com.devnear.web.dto.skill.SkillCreateRequest;
 import com.devnear.web.dto.skill.SkillResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,5 +48,36 @@ public class SkillService {
                 .stream()
                 .map(SkillResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    // 커스텀 스킬 등록 (is_default = false)
+    @Transactional
+    public SkillResponse addCustomSkill(SkillCreateRequest request) {
+        String name = request.getName() != null ? request.getName().trim() : "";
+        String category = request.getCategory() != null ? request.getCategory().trim() : "";
+
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("스킬 이름은 비어있을 수 없습니다.");
+        }
+
+        if (skillRepository.existsByName(name)) {
+            throw new IllegalArgumentException("이미 존재하는 스킬입니다: " + name);
+        }
+
+        Skill skill = Skill.builder()
+                .name(name)
+                .category(category)
+                .isDefault(false)
+                .build();
+        return SkillResponse.from(skillRepository.save(skill));
+    }
+
+    // 스킬 삭제
+    @Transactional
+    public void deleteSkill(Long skillId) {
+        if (!skillRepository.existsById(skillId)) {
+            throw new IllegalArgumentException("존재하지 않는 스킬입니다.");
+        }
+        skillRepository.deleteById(skillId);
     }
 }
