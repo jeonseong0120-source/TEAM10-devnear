@@ -40,30 +40,37 @@ public class SecurityConfig {
                 )
 
                 // [보고] 엔드포인트별 인가(Authorization) 정책 정의.
-                .authorizeHttpRequests(auth -> auth
-                        // 0. [필수 복구] 회원가입, 로그인 및 Swagger API는 누구나 접근 가능해야 함 (이전 설정 복구)
-                        .requestMatchers("/api/users/register", "/api/users/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // SecurityConfig.java 의 authorizeHttpRequests 부분 수정
 
-                        // 1. [인증 ❌] 명세서상 누구나 볼 수 있는 '조회' API들
+                .authorizeHttpRequests(auth -> auth
+                        // 0. [공통] 누구나 접근 가능
+                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // 1. [조회] GET 요청은 비로그인도 가능 (명세서 준수)
                         .requestMatchers(HttpMethod.GET, "/api/freelancers/**", "/api/projects/**", "/api/portfolios/**").permitAll()
 
-                        // 2. [인증 ⭕] 명세서상 반드시 로그인이 필요한 '공통' API
-                        .requestMatchers("/api/users/me", "/api/auth/logout").authenticated()
+                        // 2. [인증] 내 정보 관련 (로그인 필수)
+                        .requestMatchers("/api/users/me").authenticated()
 
-                        // 3. [권한 ⭕] 프리랜서 전용 (등록, 수정, 삭제, 지원)
-                        // 명세서: 포트폴리오 등록(POST), 삭제(DELETE), 프로젝트 지원(POST)
+                        // 3. [권한] 프리랜서 전용 구역 (중요: /test 포함 모든 하위 경로 잠금)
                         .requestMatchers(HttpMethod.POST, "/api/portfolios", "/api/applications").hasAnyRole("FREELANCER", "BOTH")
                         .requestMatchers(HttpMethod.DELETE, "/api/portfolios/**").hasAnyRole("FREELANCER", "BOTH")
                         .requestMatchers(HttpMethod.PATCH, "/api/freelancers/status").hasAnyRole("FREELANCER", "BOTH")
+                        // [추가] 프리랜서 도메인 전체에 대한 계급 검사 (이게 있어야 CLIENT를 입구 컷 함)
+                        .requestMatchers("/api/freelancer/**").hasAnyRole("FREELANCER", "BOTH")
 
-                        // 4. [권한 ⭕] 클라이언트 전용 (등록, 관리)
-                        // 명세서: 프로젝트 등록(POST), 지원 수락(PATCH)
+                        // 4. [권한] 클라이언트 전용 구역 (리뷰 피드백 반영: HttpMethod.PATCH 명시)
                         .requestMatchers(HttpMethod.POST, "/api/projects").hasAnyRole("CLIENT", "BOTH")
-                        .requestMatchers("/api/projects/*/applications", "/api/applications/*/accept").hasAnyRole("CLIENT", "BOTH")
+                        // [수정] 지원 수락(PATCH) 메서드를 명시하여 모호성 제거
+                        .requestMatchers(HttpMethod.PATCH, "/api/projects/*/applications", "/api/applications/*/accept")
+                        .hasAnyRole("CLIENT", "BOTH")
+                        // [추가] 클라이언트 도메인 전체에 대한 계급 검사
+                        .requestMatchers("/api/client/**").hasAnyRole("CLIENT", "BOTH")
 
-                        // 5. 나머지는 일단 로그인 필수
+                        // 5. [나머지] 위 규칙에 해당 안 되는 모든 요청은 로그인 필수
                         .anyRequest().authenticated()
                 )
+
                 // [보고] 커스텀 JWT 인증 필터를 UsernamePasswordAuthenticationFilter 이전에 배치하여,
                 // 기본 로그인 처리 전 토큰 유효성 검증을 선행하도록 구성함.
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
