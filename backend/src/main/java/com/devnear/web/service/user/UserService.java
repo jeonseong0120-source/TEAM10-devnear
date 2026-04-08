@@ -18,7 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider; // 🚨 필드 주입은 모두 상단으로 집합!
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public Long register(UserRegisterRequest request) {
