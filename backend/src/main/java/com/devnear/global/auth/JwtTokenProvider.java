@@ -22,7 +22,7 @@ public class JwtTokenProvider {
     private final SecretKey key; // final 유지
     private final long validityInMilliseconds; // final 유지
 
-    // 2. 생성자를 통해 설정값(@Value)과 의존성(UserDetailsService)을 한꺼번에 주입받
+    // 2. 생성자를 통해 설정값(@Value)과 의존성(UserDetailsService)을 한꺼번에 주입
     public JwtTokenProvider(
             UserDetailsService userDetailsService,
             @Value("${jwt.secret}") String secretString,
