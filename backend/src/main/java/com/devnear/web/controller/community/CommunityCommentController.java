@@ -20,7 +20,7 @@ public class CommunityCommentController {
 
     @PostMapping("/api/community/comments")
     public ResponseEntity<Long> create(@RequestBody CommunityCommentCreateRequest request,
-                                       @RequestHeader("X-USER-ID") Long userId) {
+                                       @RequestHeader("USER-ID") Long userId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(communityCommentService.create(request, userId));
     }
@@ -33,14 +33,14 @@ public class CommunityCommentController {
     @PutMapping("/api/community/comments/{commentId}")
     public ResponseEntity<CommunitySuccessResponse> update(@PathVariable Long commentId,
                                                            @RequestBody CommunityCommentUpdateRequest request,
-                                                           @RequestHeader("X-USER-ID") Long userId) {
+                                                           @RequestHeader("USER-ID") Long userId) {
         communityCommentService.update(commentId, request, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
 
     @DeleteMapping("/api/community/comments/{commentId}")
     public ResponseEntity<CommunitySuccessResponse> delete(@PathVariable Long commentId,
-                                                           @RequestHeader("X-USER-ID") Long userId) {
+                                                           @RequestHeader("USER-ID") Long userId) {
         communityCommentService.delete(commentId, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
