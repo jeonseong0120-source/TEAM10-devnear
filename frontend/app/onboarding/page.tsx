@@ -31,32 +31,38 @@ export default function OnboardingPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const normalizedNickname = nickname.trim();
+        if (!normalizedNickname) return alert("닉네임을 입력해주세요");
         if (!role) return alert("역할을 선택해주세요");
 
         setLoading(true);
         try {
-            // 1. 온보딩 요청을 보내고 '새로운 토큰'이 담긴 응답을 받습니다.
-            const res = await api.post("/api/v1/users/onboarding", { nickname, role });
+            const res = await api.post("/api/v1/users/onboarding", { nickname: normalizedNickname, role });
 
-            // 2. [핵심] 백엔드가 준 승격된 새 토큰(ROLE_USER 등)을 금고에 저장합니다.
-            // 백엔드 DTO 구조에 따라 res.data.accessToken 또는 res.data 등으로 확인 필요!
+            // [수정 포인트] 토큰이 없으면 여기서 바로 컷! (Fail-Fast)
             const newToken = res.data.accessToken;
-            if (newToken) {
-                localStorage.setItem("accessToken", newToken);
-                console.log("새로운 정식 요원 증표 저장 완료!");
+            if (!newToken) {
+                // 토큰이 없으면 에러를 던져서 catch 구문으로 보냅니다.
+                throw new Error("인증 토큰을 받지 못했습니다. 다시 로그인해주세요.");
             }
 
-            // 3. 이제 새 토큰을 들고 내 정보를 다시 가져옵니다. (이제 정식 요원으로 보임)
-            const userRes = await api.get("/api/v1/users/me");
-            alert(`${userRes.data.nickname}님, DevNear에 오신 것을 환영합니다!`);
+            // 토큰이 있을 때만 안전하게 저장하고 다음 단계 진행
+            localStorage.setItem("accessToken", newToken);
+            console.log("정식 요원 증표 교체 완료!");
 
+            const userRes = await api.get("/api/v1/users/me");
+            alert(`${userRes.data.nickname}님, 합류를 환영합니다!`);
             router.push("/");
+
         } catch (err: any) {
-            alert(err.response?.data?.message || "설정 중 오류가 발생했습니다.");
+            // 토큰 누락 에러나 API 에러가 여기서 타당하게 처리됩니다.
+            alert(err.message || err.response?.data?.message || "설정 중 오류 발생");
         } finally {
             setLoading(false);
         }
     };
+
+
     if (loading) return <div className="flex min-h-screen items-center justify-center bg-white font-bold">기지 스캔 중...</div>;
 
     return (
