@@ -8,7 +8,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "FreelancerSkill")
+@Table(
+    name = "FreelancerSkill",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"freelancer_profile_id", "skill_id"})
+    }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 // 프리랜서와 스킬을 연결하는 다리(Bridge) 엔티티

@@ -60,6 +60,15 @@ public class FreelancerService {
         if (request.getSkillIds() != null) {
             // 선택된 스킬 엔티티 일괄 조회
             List<Skill> selectedSkills = skillRepository.findAllById(request.getSkillIds());
+            
+            // 보유 스킬 ID 검증 (존재하지 않는 ID 방어)
+            if (selectedSkills.size() != request.getSkillIds().size()) {
+                List<Long> foundIds = selectedSkills.stream().map(Skill::getId).collect(Collectors.toList());
+                List<Long> missingIds = request.getSkillIds().stream()
+                        .filter(id -> !foundIds.contains(id))
+                        .collect(Collectors.toList());
+                throw new IllegalArgumentException("존재하지 않는 스킬 ID가 포함되어 있습니다: " + missingIds);
+            }
 
             // 연결 엔티티(Bridge) 객체로 매핑
             List<FreelancerSkill> newFreelancerSkills = selectedSkills.stream()
@@ -103,6 +112,10 @@ public class FreelancerService {
     // [수정] 내 활동 상태(토글) 단독 업데이트
     @Transactional
     public void updateStatus(User user, Boolean isActive) {
+        if (isActive == null) {
+            throw new IllegalArgumentException("활동 상태값(isActive)은 필수입니다.");
+        }
+        
         FreelancerProfile profile = profileRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("프로필이 아직 생성되지 않았습니다."));
 

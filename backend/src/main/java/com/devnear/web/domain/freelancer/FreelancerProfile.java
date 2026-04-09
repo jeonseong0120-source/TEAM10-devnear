@@ -94,7 +94,9 @@ public class FreelancerProfile extends BaseTimeEntity {
         this.latitude = latitude;
         this.longitude = longitude;
         this.hourlyRate = hourlyRate;
-        this.workStyle = workStyle;
+        if (workStyle != null) {
+            this.workStyle = workStyle;
+        }
         if (isActive != null) {
             this.isActive = isActive;
         }

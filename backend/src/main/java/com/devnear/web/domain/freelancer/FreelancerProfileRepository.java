@@ -11,14 +11,14 @@ public interface FreelancerProfileRepository extends JpaRepository<FreelancerPro
     
     Optional<FreelancerProfile> findByUser_Id(Long userId);
 
-    @Query("SELECT fp FROM FreelancerProfile fp " +
+    @Query("SELECT DISTINCT fp FROM FreelancerProfile fp " +
            "LEFT JOIN FETCH fp.freelancerSkills fs " +
            "LEFT JOIN FETCH fs.skill " +
            "WHERE fp.user.id = :userId")
     Optional<FreelancerProfile> findByUserIdWithSkills(@Param("userId") Long userId);
 
     // [API] 프리랜서 상세 조회 (id로 찾기)
-    @Query("SELECT fp FROM FreelancerProfile fp " +
+    @Query("SELECT DISTINCT fp FROM FreelancerProfile fp " +
            "LEFT JOIN FETCH fp.freelancerSkills fs " +
            "LEFT JOIN FETCH fs.skill " +
            "WHERE fp.id = :id")

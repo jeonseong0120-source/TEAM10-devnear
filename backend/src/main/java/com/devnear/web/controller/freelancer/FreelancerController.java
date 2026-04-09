@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/freelancers")
 @RequiredArgsConstructor
@@ -47,7 +49,11 @@ public class FreelancerController {
     @PutMapping("/me")
     public ResponseEntity<FreelancerProfileResponse> updateMyProfile(
             @AuthenticationPrincipal User user,
-            @RequestBody FreelancerProfileRequest request) {
+            @Valid @RequestBody FreelancerProfileRequest request) {
+
+        if (user == null) {
+            return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
 
         return ResponseEntity.ok(freelancerService.updateMyProfile(user, request));
     }
@@ -74,7 +80,11 @@ public class FreelancerController {
     @PatchMapping("/status")
     public ResponseEntity<Map<String, String>> updateMyStatus(
             @AuthenticationPrincipal User user,
-            @RequestBody com.devnear.web.dto.freelancer.FreelancerStatusRequest request) {
+            @Valid @RequestBody com.devnear.web.dto.freelancer.FreelancerStatusRequest request) {
+
+        if (user == null) {
+            return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
 
         freelancerService.updateStatus(user, request.getIsActive());
 
