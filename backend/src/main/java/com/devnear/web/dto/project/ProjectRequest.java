@@ -34,17 +34,24 @@ public class ProjectRequest {
     @Size(max = 500, message = "주소는 500자를 초과할 수 없습니다.")
     private String location;
 
+    @DecimalMin(value = "-90.0", message = "위도는 -90 이상이어야 합니다.")
+    @DecimalMax(value = "90.0", message = "위도는 90 이하여야 합니다.")
     private Double latitude;
 
+    @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
+    @DecimalMax(value = "180.0", message = "경도는 180 이하여야 합니다.")
     private Double longitude;
 
     @AssertTrue(message = "오프라인 프로젝트는 주소 정보가 필수입니다.")
-    private boolean isOfflineAddressValid() {
+    private boolean isOfflineLocationValid() {
         if (!offline) {
-            return true;
+            return true; // 오프라인이 아니면 검증 통과
         }
-        return location != null && ! location.trim().isEmpty()
-                && latitude != null && longitude != null;
+
+    return location != null && !location.trim().isEmpty()
+            && latitude != null && longitude != null
+            && latitude >= -90.0 && latitude <= 90.0
+            && longitude >= -180.0 && longitude <= 180.0;
     }
 
     public Project toEntity(ClientProfile clientProfile) {
