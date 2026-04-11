@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import FreelancerCard from '@/components/freelancer/FreelancerCard';
+import { FreelancerProfile, ApiFreelancerDto, mapFreelancerDtoToProfile } from '@/types/freelancer';
 import api from '../lib/axios';
 import { Search, MapPin, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ClientDashboard() {
     const router = useRouter();
-    const [freelancers, setFreelancers] = useState<any[]>([]);
+    // [수정] any 배열 대신 강력하게 타입이 지정된 FreelancerProfile 배열 사용
+    const [freelancers, setFreelancers] = useState<FreelancerProfile[]>([]);
     const [filter, setFilter] = useState({ skill: '', region: '', sort: 'id' });
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
@@ -61,8 +63,10 @@ export default function ClientDashboard() {
     const fetchFreelancers = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/v1/freelancers', { params: filter });
-            setFreelancers(data);
+            const { data } = await api.get<ApiFreelancerDto[]>('/v1/freelancers', { params: filter });
+            // [수정] 백엔드 응답(DTO)을 프론트엔드 전용 타입으로 매핑하여 상태에 저장
+            const mappedData = data.map(mapFreelancerDtoToProfile);
+            setFreelancers(mappedData);
         } catch (err) {
             console.error("인재를 불러오지 못했습니다!", err);
         } finally {
@@ -71,7 +75,9 @@ export default function ClientDashboard() {
     };
 
     useEffect(() => {
-        if (authorized) fetchFreelancers();
+        if (authorized) {
+            fetchFreelancers();
+        }
     }, [filter, authorized]);
 
     const presetSkills = ['Java', 'React', 'Spring Boot', 'Figma', 'Node.js', 'Python', 'AWS'];
@@ -230,8 +236,9 @@ export default function ClientDashboard() {
                 ) : freelancers.length > 0 ? (
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {freelancers.map((item, idx) => (
-                            <FreelancerCard key={item.profileId || idx} data={item} />
+                        {freelancers.map((item) => (
+                            // [수정] 매퍼 함수를 통해 완전하게 변환된 데이터(id 존재 보장)를 사용합니다.
+                            <FreelancerCard key={item.id} data={item} />
                         ))}
                     </div>
 
