@@ -17,7 +17,7 @@ public interface BookmarkFreelancerRepository extends JpaRepository<BookmarkFree
 
     Optional<BookmarkFreelancer> findByClientProfileAndFreelancerProfile(ClientProfile clientProfile, FreelancerProfile freelancerProfile);
 
-    @EntityGraph(attributePaths = {"freelancerProfile", "freelancerProfile.user", "freelancerProfile.freelancerSkills", "freelancerProfile.freelancerSkills.skill"})
+    @EntityGraph(attributePaths = {"freelancerProfile", "freelancerProfile.user"})
     Page<BookmarkFreelancer> findAllByClientProfile(ClientProfile clientProfile, Pageable pageable);
 }
 

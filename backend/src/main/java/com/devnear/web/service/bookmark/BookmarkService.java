@@ -16,6 +16,7 @@ import com.devnear.web.dto.portfolio.PortfolioResponse;
 import com.devnear.web.exception.DuplicateProfileException;
 import com.devnear.web.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,15 +40,14 @@ public class BookmarkService {
         ClientProfile clientProfile = findClientProfileByUser(user);
         FreelancerProfile freelancerProfile = freelancerProfileRepository.findById(freelancerProfileId)
                 .orElseThrow(() -> new ResourceNotFoundException("프리랜서 프로필을 찾을 수 없습니다."));
-
-        if (bookmarkFreelancerRepository.existsByClientProfileAndFreelancerProfile(clientProfile, freelancerProfile)) {
+        try {
+            bookmarkFreelancerRepository.save(BookmarkFreelancer.builder()
+                    .clientProfile(clientProfile)
+                    .freelancerProfile(freelancerProfile)
+                    .build());
+        } catch (DataIntegrityViolationException e) {
             throw new DuplicateProfileException("이미 찜한 프리랜서입니다.");
         }
-
-        bookmarkFreelancerRepository.save(BookmarkFreelancer.builder()
-                .clientProfile(clientProfile)
-                .freelancerProfile(freelancerProfile)
-                .build());
     }
 
     @Transactional
@@ -76,15 +76,14 @@ public class BookmarkService {
         ClientProfile clientProfile = findClientProfileByUser(user);
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResourceNotFoundException("포트폴리오를 찾을 수 없습니다."));
-
-        if (bookmarkPortfolioRepository.existsByClientProfileAndPortfolio(clientProfile, portfolio)) {
+        try {
+            bookmarkPortfolioRepository.save(BookmarkPortfolio.builder()
+                    .clientProfile(clientProfile)
+                    .portfolio(portfolio)
+                    .build());
+        } catch (DataIntegrityViolationException e) {
             throw new DuplicateProfileException("이미 찜한 포트폴리오입니다.");
         }
-
-        bookmarkPortfolioRepository.save(BookmarkPortfolio.builder()
-                .clientProfile(clientProfile)
-                .portfolio(portfolio)
-                .build());
     }
 
     @Transactional

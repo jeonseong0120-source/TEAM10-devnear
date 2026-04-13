@@ -19,9 +19,7 @@ public interface BookmarkPortfolioRepository extends JpaRepository<BookmarkPortf
 
     @EntityGraph(attributePaths = {
             "portfolio",
-            "portfolio.portfolioSkills",
-            "portfolio.portfolioSkills.skill",
-            "portfolio.portfolioImages"
+            "portfolio.user"
     })
     Page<BookmarkPortfolio> findAllByClientProfile(ClientProfile clientProfile, Pageable pageable);
 }
