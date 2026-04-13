@@ -2,9 +2,9 @@ package com.devnear.web.service.project;
 
 import com.devnear.web.domain.client.ClientProfile;
 import com.devnear.web.domain.client.ClientProfileRepository;
+import com.devnear.web.domain.enums.ProjectStatus;
 import com.devnear.web.domain.project.Project;
 import com.devnear.web.domain.project.ProjectRepository;
-import com.devnear.web.domain.project.ProjectSkill;
 import com.devnear.web.domain.skill.Skill;
 import com.devnear.web.domain.skill.SkillRepository;
 import com.devnear.web.domain.user.User;
@@ -110,8 +110,13 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> getMyProjectList(User user, Pageable pageable) {
+    public Page<ProjectResponse> getMyProjectList(User user, ProjectStatus status, Pageable pageable) {
         ClientProfile clientProfile = findClientProfileByUser(user);
+
+        if (status != null) {
+            return projectRepository.findAllByClientProfileAndStatus(clientProfile, status, pageable)
+                    .map(ProjectResponse::from);
+        }
         return projectRepository.findAllByClientProfile(clientProfile, pageable)
                 .map(ProjectResponse::from);
     }

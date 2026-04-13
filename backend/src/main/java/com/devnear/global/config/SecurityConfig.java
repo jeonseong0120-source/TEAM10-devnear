@@ -68,7 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/**", "/api/v1/projects/**").hasAnyRole("CLIENT", "BOTH")
                         .requestMatchers(HttpMethod.PATCH, "/api/projects/*/applications", "/api/v1/projects/*/applications", "/api/applications/*/accept", "/api/v1/applications/*/accept").hasAnyRole("CLIENT", "BOTH")
                         .requestMatchers("/api/client/**", "/api/v1/client/**").hasAnyRole("CLIENT", "BOTH")
-
+                        .requestMatchers("/api/bookmarks/**", "/api/v1/bookmarks/**").hasAnyRole("CLIENT", "BOTH")
                         .anyRequest().hasAnyRole("CLIENT", "FREELANCER", "BOTH")
                 )
                 .oauth2Login(oauth2 -> oauth2
