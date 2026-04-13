@@ -24,8 +24,6 @@ public class BookmarkController {
 
     private final BookmarkService bookmarkService;
 
-    // ── 프리랜서 찜 ──
-
     @Operation(summary = "프리랜서 찜 추가")
     @PostMapping("/freelancers/{freelancerProfileId}")
     public ResponseEntity<Void> addFreelancerBookmark(
@@ -52,31 +50,21 @@ public class BookmarkController {
         return ResponseEntity.ok(bookmarkService.getBookmarkedFreelancers(user, pageable));
     }
 
-    // ── 포트폴리오 찜 ──
-
-    @Operation(summary = "포트폴리오 찜 추가")
-    @PostMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<Void> addPortfolioBookmark(
+    @Operation(summary = "포트폴리오 좋아요", description = "포트폴리오 작성자를 찜합니다.")
+    @PostMapping("/portfolios/{portfolioId}/like")
+    public ResponseEntity<Void> likePortfolio(
             @AuthenticationPrincipal User user,
             @PathVariable Long portfolioId) {
-        bookmarkService.addPortfolioBookmark(user, portfolioId);
+        bookmarkService.likePortfolio(user, portfolioId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @Operation(summary = "포트폴리오 찜 삭제")
-    @DeleteMapping("/portfolios/{portfolioId}")
-    public ResponseEntity<Void> removePortfolioBookmark(
+    @Operation(summary = "포트폴리오 좋아요 취소", description = "포트폴리오 작성자 찜을 취소합니다.")
+    @DeleteMapping("/portfolios/{portfolioId}/like")
+    public ResponseEntity<Void> unlikePortfolio(
             @AuthenticationPrincipal User user,
             @PathVariable Long portfolioId) {
-        bookmarkService.removePortfolioBookmark(user, portfolioId);
+        bookmarkService.unlikePortfolio(user, portfolioId);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "찜한 포트폴리오 목록 조회")
-    @GetMapping("/portfolios")
-    public ResponseEntity<Page<PortfolioResponse>> getBookmarkedPortfolios(
-            @AuthenticationPrincipal User user,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(bookmarkService.getBookmarkedPortfolios(user, pageable));
     }
 }
