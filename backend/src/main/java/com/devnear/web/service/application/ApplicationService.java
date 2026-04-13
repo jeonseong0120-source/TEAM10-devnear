@@ -34,9 +34,13 @@ public class ApplicationService {
         FreelancerProfile freelancer = freelancerProfileRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("프리랜서 프로필이 등록되어 있지 않습니다."));
 
-        // 2. 프로젝트 존재 여부 검증
+        // 2. 프로젝트 존재 여부 및 모집 상태 검증
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new IllegalArgumentException("지원하려는 프로젝트(공고)를 찾을 수 없습니다."));
+
+        if (project.getStatus() != com.devnear.web.domain.enums.ProjectStatus.OPEN) {
+            throw new IllegalStateException("현재 모집 중인 공고가 아닙니다. (지원 불가)");
+        }
 
         // 3. 중복 지원 방지
         if (applicationRepository.existsByProjectIdAndFreelancerProfileId(project.getId(), freelancer.getId())) {
