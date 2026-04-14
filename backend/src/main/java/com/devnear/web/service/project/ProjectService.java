@@ -110,6 +110,17 @@ public class ProjectService {
                 .map(ProjectResponse::from);
     }
 
+    // [추가] 프리랜서 탐색용 필터 검색 메서드
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchProjects(String keyword, String location, String skill, Pageable pageable) {
+        String safeKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
+        String safeLocation = (location != null && location.trim().isEmpty()) ? null : location;
+        String safeSkill = (skill != null && skill.trim().isEmpty()) ? null : skill;
+
+        return projectRepository.searchProjects(safeKeyword, safeLocation, safeSkill, pageable)
+                .map(ProjectResponse::from);
+    }
+
     @Transactional(readOnly = true)
     public Page<ProjectResponse> getMyProjectList(User user, ProjectStatus status, Pageable pageable) {
         ClientProfile clientProfile = findClientProfileByUser(user);
