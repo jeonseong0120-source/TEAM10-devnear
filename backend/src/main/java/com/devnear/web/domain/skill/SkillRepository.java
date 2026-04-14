@@ -13,8 +13,7 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
     Optional<Skill> findByName(String name);
 
     List<Skill> findByNameIn(List<String> names);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = false)
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
             INSERT INTO `Skills` (`name`, `is_default`, `category`)
             VALUES (:name, false, NULL)

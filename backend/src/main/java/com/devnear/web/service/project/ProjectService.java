@@ -129,7 +129,7 @@ public class ProjectService {
             }
 
             List<Skill> resolvedByNames = requestedSkillNames.stream()
-                    .map(name -> existingSkillMap.getOrDefault(name, getOrCreateSkillByName(name)))
+                    .map(name -> existingSkillMap.computeIfAbsent(name, this::getOrCreateSkillByName))
                     .collect(Collectors.toList());
             resolvedSkills.addAll(resolvedByNames);
         }
