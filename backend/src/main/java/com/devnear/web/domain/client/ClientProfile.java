@@ -84,7 +84,7 @@ public class ClientProfile extends BaseTimeEntity {
         this.phoneNum = phoneNum;
         this.grade = ClientGrade.NORMAL;
         this.verificationStatus = VerificationStatus.PENDING;
-        this.rating = BigDecimal.ZERO; // NPE 방지를 위해 0으로 초기화
+        this.rating = BigDecimal.ZERO;
         this.totalProjects = 0;
     }
 
