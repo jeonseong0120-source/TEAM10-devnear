@@ -5,6 +5,7 @@ import com.devnear.web.domain.client.ClientProfileRepository;
 import com.devnear.web.domain.enums.ProjectStatus;
 import com.devnear.web.domain.project.Project;
 import com.devnear.web.domain.project.ProjectRepository;
+import com.devnear.web.domain.project.ProjectSearchCond;
 import com.devnear.web.domain.project.ProjectSkill;
 import com.devnear.web.domain.skill.Skill;
 import com.devnear.web.domain.skill.SkillRepository;
@@ -21,8 +22,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -44,8 +49,9 @@ public class ProjectService {
 
         Project project = projectRepository.save(request.toEntity(clientProfile));
 
-        if (request.getSkillNames() != null && !request.getSkillNames().isEmpty()) {
-            mapSkillsToProject(project, request.getSkillNames());
+        List<Skill> skills = resolveSkills(request);
+        if (!skills.isEmpty()) {
+            mapSkillsToProject(project, skills);
         }
 
         if (log.isDebugEnabled()) {
@@ -66,34 +72,75 @@ public class ProjectService {
 
         project.update(request);
 
-        if (request.getSkillNames() != null) {
+        if (request.hasSkillPayload()) {
+            List<Skill> skills = resolveSkills(request);
             project.updateSkills(Collections.emptyList());
-            if (!request.getSkillNames().isEmpty()) {
-                mapSkillsToProject(project, request.getSkillNames());
+            if (!skills.isEmpty()) {
+                mapSkillsToProject(project, skills);
             }
         }
     }
 
-    private void mapSkillsToProject(Project project, List<String> skillNames) {
-        List<ProjectSkill> projectSkills = skillNames.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .distinct()
-                .map(name -> {
-                    Skill skill = skillRepository.findByName(name)
-                            .orElseGet(() -> skillRepository.save(Skill.builder()
-                                    .name(name)
-                                    .isDefault(false)
-                                    .build()));
-                    return ProjectSkill.builder()
-                            .project(project)
-                            .skill(skill)
-                            .build();
-                })
+    private void mapSkillsToProject(Project project, List<Skill> skills) {
+        List<ProjectSkill> projectSkills = skills.stream()
+                .map(skill -> ProjectSkill.builder()
+                        .project(project)
+                        .skill(skill)
+                        .build())
                 .collect(Collectors.toList());
 
         project.updateSkills(projectSkills);
+    }
+
+    private List<Skill> resolveSkills(ProjectRequest request) {
+        Set<Skill> resolvedSkills = new LinkedHashSet<>();
+
+        if (request.getSkillIds() != null && !request.getSkillIds().isEmpty()) {
+            List<Long> requestedSkillIds = request.getSkillIds().stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            List<Skill> skillsByIds = skillRepository.findAllById(requestedSkillIds);
+            if (skillsByIds.size() != requestedSkillIds.size()) {
+                Set<Long> foundIds = skillsByIds.stream()
+                        .map(Skill::getId)
+                        .collect(Collectors.toSet());
+                List<Long> missingIds = requestedSkillIds.stream()
+                        .filter(id -> !foundIds.contains(id))
+                        .collect(Collectors.toList());
+                throw new IllegalArgumentException("존재하지 않는 스킬 ID가 포함되어 있습니다: " + missingIds);
+            }
+            resolvedSkills.addAll(skillsByIds);
+        }
+
+        if (request.getSkillNames() != null && !request.getSkillNames().isEmpty()) {
+            List<String> requestedSkillNames = request.getSkillNames().stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            List<Skill> existingSkills = skillRepository.findByNameIn(requestedSkillNames);
+            Map<String, Skill> existingSkillMap = new HashMap<>();
+            for (Skill skill : existingSkills) {
+                existingSkillMap.put(skill.getName(), skill);
+            }
+
+            List<Skill> resolvedByNames = requestedSkillNames.stream()
+                    .map(name -> existingSkillMap.computeIfAbsent(name, this::getOrCreateSkillByName))
+                    .collect(Collectors.toList());
+            resolvedSkills.addAll(resolvedByNames);
+        }
+
+        return List.copyOf(resolvedSkills);
+    }
+
+    private Skill getOrCreateSkillByName(String name) {
+        skillRepository.upsertByName(name);
+        return skillRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException("업서트 후 스킬 조회에 실패했습니다: " + name));
     }
 
     @Transactional
@@ -139,6 +186,12 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("해당 프로젝트 공고를 찾을 수 없습니다. ID: " + projectId));
 
         return ProjectResponse.from(project);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchProjects(ProjectSearchCond cond, Pageable pageable) {
+        return projectRepository.search(cond, pageable)
+                .map(ProjectResponse::from);
     }
 
     private ClientProfile findClientProfileByUser(User user) {

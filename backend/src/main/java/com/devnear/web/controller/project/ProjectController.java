@@ -1,6 +1,7 @@
 package com.devnear.web.controller.project;
 
 import com.devnear.web.domain.enums.ProjectStatus;
+import com.devnear.web.domain.project.ProjectSearchCond;
 import com.devnear.web.domain.user.User;
 import com.devnear.web.dto.project.ProjectRequest;
 import com.devnear.web.dto.project.ProjectResponse;

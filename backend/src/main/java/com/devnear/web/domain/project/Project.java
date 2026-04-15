@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class Project extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer budget;
 
-    @Column(name = "Deadline", nullable = false)
+    @Column(name = "deadline", nullable = false)
     private LocalDate deadline;
 
     @Column(columnDefinition = "TEXT")
@@ -66,6 +67,7 @@ public class Project extends BaseTimeEntity {
     @Column
     private Double longitude;
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectSkill> projectSkills = new ArrayList<>();
 
@@ -84,6 +86,8 @@ public class Project extends BaseTimeEntity {
         this.latitude = latitude;
         this.longitude = longitude;
         this.status = ProjectStatus.OPEN;
+        // [수정] Builder 생성 시 NullPointerException을 방지하기 위한 명시적 컬렉션 초기화
+        this.projectSkills = new ArrayList<>();
     }
 
     public void update(ProjectRequest request) {
@@ -124,9 +128,16 @@ public class Project extends BaseTimeEntity {
         this.status = ProjectStatus.COMPLETED;
     }
 
-
     public void updateSkills(List<ProjectSkill> newProjectSkills) {
+        if (this.projectSkills == null) {
+            this.projectSkills = new ArrayList<>();
+        }
         this.projectSkills.clear();
-        this.projectSkills.addAll(newProjectSkills);
+        if (newProjectSkills != null) {
+            for (ProjectSkill ps : newProjectSkills) {
+                this.projectSkills.add(ps);
+                // 양방향 연관관계 편의 로직 (생략 가능하지만 안전을 위해)
+            }
+        }
     }
 }
